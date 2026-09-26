@@ -10,8 +10,9 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package Files
 *.jar
+!Mars.jar
 *.war
 *.nar
 *.ear
@@ -24,6 +25,6 @@ hs_err_pid*
 replay_pid*
 
 # NetBeans
-/MiniLang_Pipeline/nbproject/private/
-/MiniLang_Pipeline/build/
-/MiniLang_Pipeline/dist/
+nbproject/private/
+build/
+dist/
