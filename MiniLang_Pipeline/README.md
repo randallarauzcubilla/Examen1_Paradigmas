@@ -82,7 +82,7 @@ MiniLang_Pipeline/
 
 ## 4. Ejecución rápida (recomendada)
 
-**⚠️ Importante:** El punto de entrada principal es `run_pipeline.bat`, 
+**Importante:** El punto de entrada principal es `run_pipeline.bat`, 
 **no** el `main` de Java directamente. El `.bat` orquesta las 3 etapas, 
 compila el código, ejecuta los tests y regenera los artefactos.
 
@@ -109,7 +109,7 @@ RESULTS: PASS=6  FAIL=0
 
 ## 5. Ejecución manual etapa por etapa
 
-**⚠️ Importante:** El punto de entrada oficial del proyecto es `run_pipeline.bat`.
+**Importante:** El punto de entrada oficial del proyecto es `run_pipeline.bat`.
 Ejecutar `MiniLang_Pipeline.java` directamente **solo corre la Etapa 1 (Java)**
 y no garantiza que las etapas 2 y 3 se ejecuten en el orden correcto.
 
