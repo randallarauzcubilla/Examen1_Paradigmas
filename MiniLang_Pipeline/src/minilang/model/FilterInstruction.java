@@ -55,15 +55,17 @@ public final class FilterInstruction extends Instruction {
         switch (op) {
             case ">":
             case "<":
-            case "=":
             case ">=":
             case "<=":
             case "!=":
+            case "==":
                 return op;
+            case "=":
+                return "==";
             default:
                 throw new IllegalArgumentException(
-                        "Invalid FILTER operator: '" + op + "'. "
-                        + "Allowed: > < = >= <= !=");
+                        "Invalid FILTER operator: '" + op
+                        + "'. Allowed: > < = >= <= != ==");
         }
     }
 
