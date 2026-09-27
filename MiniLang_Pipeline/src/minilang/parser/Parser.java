@@ -168,7 +168,12 @@ public final class Parser {
                     parseInteger(t.getLexeme(), lineNum));
         }
 
-        return new DataInstruction(lineNum, values);
+        try {
+            return new DataInstruction(lineNum, values);
+        } catch (IllegalArgumentException e) {
+            throw new ParserException(
+                    e.getMessage(), lineNum);
+        }
     }
 
     /**
@@ -215,8 +220,15 @@ public final class Parser {
 
         final int threshold
                 = parseInteger(numToken.getLexeme(), lineNum);
-        return new FilterInstruction(
-                lineNum, opToken.getLexeme(), threshold);
+
+        try {
+            return new FilterInstruction(
+                    lineNum, opToken.getLexeme(), threshold);
+        } catch (IllegalArgumentException e) {
+            throw new ParserException(
+                    e.getMessage(), lineNum);
+        }
+
     }
 
     /**
@@ -262,8 +274,13 @@ public final class Parser {
 
         final int operand
                 = parseInteger(numToken.getLexeme(), lineNum);
-        return new MapInstruction(
-                lineNum, opToken.getLexeme(), operand);
+        try {
+            return new MapInstruction(
+                    lineNum, opToken.getLexeme(), operand);
+        } catch (IllegalArgumentException e) {
+            throw new ParserException(
+                    e.getMessage(), lineNum);
+        }
     }
 
     /**
@@ -297,8 +314,13 @@ public final class Parser {
                     lineNum);
         }
 
-        return new ReduceInstruction(
-                lineNum, opToken.getLexeme());
+        try {
+            return new ReduceInstruction(
+                    lineNum, opToken.getLexeme());
+        } catch (IllegalArgumentException e) {
+            throw new ParserException(
+                    e.getMessage(), lineNum);
+        }
     }
 
     /**
