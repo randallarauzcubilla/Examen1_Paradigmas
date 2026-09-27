@@ -61,6 +61,7 @@ cada archivo intermedio es generado únicamente por la etapa anterior.
 
 ```
 MiniLang_Pipeline/
+├── programa.mini               Archivo demo canónico (entrada por defecto)
 ├── src/minilang/               Etapa 1 – Java
 │   ├── MiniLang_Pipeline.java  Orquestador y punto de entrada
 │   ├── lexer/                  Lexer, Token, TokenType
@@ -80,6 +81,10 @@ MiniLang_Pipeline/
 ---
 
 ## 4. Ejecución rápida (recomendada)
+
+**⚠️ Importante:** El punto de entrada principal es `run_pipeline.bat`, 
+**no** el `main` de Java directamente. El `.bat` orquesta las 3 etapas, 
+compila el código, ejecuta los tests y regenera los artefactos.
 
 Desde la raíz del proyecto, doble click en:
 
@@ -103,6 +108,10 @@ RESULTS: PASS=6  FAIL=0
 ---
 
 ## 5. Ejecución manual etapa por etapa
+
+**⚠️ Importante:** El punto de entrada oficial del proyecto es `run_pipeline.bat`.
+Ejecutar `MiniLang_Pipeline.java` directamente **solo corre la Etapa 1 (Java)**
+y no garantiza que las etapas 2 y 3 se ejecuten en el orden correcto.
 
 Ejecutar **siempre desde la raíz del proyecto** (las rutas de los
 archivos son relativas).
@@ -177,7 +186,7 @@ RESULT: 60
 ```
 RESULT: 60
 OPERATIONS: 3
-BYTESUM: 6458
+BYTESUM: <suma de bytes del archivo>
 CHECKSUM: 80
 FIRMA: OK
 ```
@@ -202,10 +211,10 @@ Gramática base del examen:
 <programa>    ::= <data> <operacion> {<operacion>} "PRINT"
 <data>        ::= "DATA" <numero> {<numero>}
 <filter>      ::= "FILTER" <comparador> <numero>
+<reduce>      ::= "REDUCE" ("SUM" | "MAX" | "MIN" | "AVG")
 <map>         ::= "MAP" <aritmetico> <numero>
-<reduce>      ::= "REDUCE" ("SUM" | "MAX" | "MIN")
 <comparador>  ::= ">" | "<" | ">=" | "<=" | "=="
-<aritmetico>  ::= "+" | "-" | "*"
+<aritmetico>  ::= "+" | "-" | "*" | "/"
 <numero>      ::= entero no negativo
 ```
 
@@ -215,8 +224,7 @@ Gramática base del examen:
 |-----------------|---------|
 | `REDUCE AVG`    | Promedio como operador de reducción adicional |
 | `MAP /`         | División entera truncada hacia cero |
-| `FILTER !=`     | Comparador de desigualdad adicional |
-| `=` normalizado | Un `=` solo se normaliza a `==` en el modelo |
+| Case-insensitive| Keywords (`data`, `map`, `sum`) se aceptan en cualquier combinación de mayúsculas/minúsculas |
 
 **Decisiones de robustez documentadas:**
 
