@@ -53,7 +53,8 @@ public final class Lexer {
      *
      * <p>
      * Each source line produces a list of tokens. Empty or blank lines are
-     * skipped silently.</p>
+     * skipped silently. No synthetic end-of-file token is ever produced:
+     * reaching the end of a line simply stops scanning.</p>
      *
      * @return a list of token lists (one per non-empty line)
      * @throws LexerException if an invalid character is found
@@ -62,9 +63,8 @@ public final class Lexer {
         final List<List<Token>> result = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
             final int lineNum = i + 1;
-            final String line = lines.get(i);
             final List<Token> tokens
-                    = tokenizeLine(line, lineNum);
+                    = tokenizeLine(lines.get(i), lineNum);
             if (!tokens.isEmpty()) {
                 result.add(tokens);
             }
@@ -75,6 +75,10 @@ public final class Lexer {
     /**
      * Tokenizes a single source line.
      *
+     * <p>
+     * Scans until the line length is exhausted. Whitespace separates tokens;
+     * the end of the line is a natural stop, never an error.</p>
+     *
      * @param line the raw source line
      * @param lineNum the 1-based line number
      * @return the list of tokens found in this line
@@ -84,31 +88,32 @@ public final class Lexer {
             final int lineNum) {
         final List<Token> tokens = new ArrayList<>();
         final int[] pos = {0};
-
         while (pos[0] < line.length()) {
             skipWhitespace(line, pos);
             if (pos[0] >= line.length()) {
                 break;
             }
-            final Token token
-                    = readToken(line, pos, lineNum);
-            tokens.add(token);
+            tokens.add(readToken(line, pos, lineNum));
         }
         return tokens;
     }
 
     /**
-     * Skips whitespace characters starting at pos.
+     * Skips whitespace characters starting at pos. Also ignores the DOS/Windows
+     * EOF marker (code 26).
      *
      * @param line the source line
      * @param pos mutable position array (index 0)
      */
     private void skipWhitespace(final String line,
             final int[] pos) {
-        while (pos[0] < line.length()
-                && Character.isWhitespace(
-                        line.charAt(pos[0]))) {
-            pos[0]++;
+        while (pos[0] < line.length()) {
+            final char c = line.charAt(pos[0]);
+            if (Character.isWhitespace(c) || c == 26) {
+                pos[0]++;
+            } else {
+                break;
+            }
         }
     }
 
@@ -126,6 +131,19 @@ public final class Lexer {
             final int lineNum) {
         final int col = pos[0] + 1;
         final char c = line.charAt(pos[0]);
+
+        // Ignore DOS/Windows EOF marker (Ctrl+Z, code 26)
+        if (c == 26) {
+            pos[0]++;
+            return readToken(line, pos, lineNum);
+        }
+
+        if (c < 32 && c != '\t') {
+            throw new LexerException(
+                    "Control character not allowed (code "
+                    + (int) c + ")",
+                    lineNum, col);
+        }
 
         if (Character.isDigit(c)) {
             return readNumber(line, pos, lineNum, col);

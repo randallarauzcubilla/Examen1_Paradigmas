@@ -15,10 +15,10 @@ Functional guarantees:
 
 IR contract (defined with the Java stage):
     DATA: n1,n2,n3
-    FILTER: op,value
-    MAP: op,value
-    REDUCE: OP
-    PRINT:
+    FILTER: op,value  (op must be >, <, >=, <=, ==)
+    MAP: op,value     (op must be +, -, *, /)
+    REDUCE: OP        (OP must be SUM, MAX, MIN, AVG)
+    PRINT:            (no payload allowed)
 
 Authors:
     Randall AC
@@ -30,9 +30,9 @@ from collections import namedtuple
 from functools import reduce
 from pathlib import Path
 
-DEFAULT_INPUT = "programa.ir"
-DEFAULT_OUTPUT = "resultado.txt"
-SEARCH_DIRS = ("output", ".")
+# Deterministic paths: no magic fallbacks.
+DEFAULT_INPUT = "output/programa.ir"
+DEFAULT_OUTPUT = "output/resultado.txt"
 
 State = namedtuple("State", ["value", "trace"])
 
@@ -87,16 +87,18 @@ def _fmt_list(values):
     return "[" + ", ".join(map(str, values)) + "]"
 
 
+# Strict contract: only operators that Java Lexer/Parser can produce.
+# Removed '=' and '!=' to match Java's strict grammar.
 COMPARISONS = {
     ">": lambda a, b: a > b,
     "<": lambda a, b: a < b,
     ">=": lambda a, b: a >= b,
     "<=": lambda a, b: a <= b,
     "==": lambda a, b: a == b,
-    "=": lambda a, b: a == b,
-    "!=": lambda a, b: a != b,
 }
 
+# Arithmetic operators. Division uses int() to mimic Java's 
+# truncation towards zero for small exam numbers.
 ARITHMETIC = {
     "+": lambda a, b: a + b,
     "-": lambda a, b: a - b,
@@ -351,15 +353,20 @@ def _handle_print(state, payload, line_no):
 
     Args:
         state: current pipeline state.
-        payload: unused (PRINT has no arguments).
+        payload: must be empty.
         line_no: IR line number.
 
     Returns:
         New state with the RESULT line appended.
 
     Raises:
-        PipelineError: if there is nothing to print.
+        PipelineError: if there is nothing to print or
+            if payload is not empty.
     """
+    # Strict contract: PRINT must not have arguments
+    if payload.strip():
+        raise PipelineError(
+            f"Line {line_no}: PRINT does not accept arguments")
     if state.value is None:
         raise PipelineError(
             f"Line {line_no}: PRINT with no data")
@@ -425,35 +432,32 @@ def _parse_line(line, line_no):
 
 
 def _resolve_path(path):
-    """Locate a file using fallback directories.
+    """Locate a file deterministically.
+
+    No magic fallbacks. Resolves relative to CWD.
 
     Args:
-        path: requested file path or bare filename.
+        path: requested file path.
 
     Returns:
         A Path object pointing to an existing file.
 
     Raises:
-        PipelineError: if the file is not found anywhere.
+        PipelineError: if the file is not found.
     """
-    direct = Path(path)
-    if direct.exists():
-        return direct
-    found = next(
-        (Path(d) / direct.name for d in SEARCH_DIRS
-         if (Path(d) / direct.name).exists()),
-        None)
-    if found is not None:
-        print(f"[INFO] Found file at: {found}")
-        return found
-    raise PipelineError(f"File not found: {path}")
+    p = Path(path)
+    if not p.is_absolute():
+        p = Path.cwd() / p
+    if not p.exists():
+        raise PipelineError(f"File not found: {p}")
+    return p
 
 
 def read_instructions(path):
     """Read and parse the IR file.
 
     Args:
-        path: IR file path or bare filename.
+        path: IR file path.
 
     Returns:
         List of parsed instruction tuples.
@@ -492,22 +496,27 @@ def execute(instructions):
 
 
 def _write_output(path, trace):
-    """Write the trace to the result file.
+    """Write the trace to the result file atomically.
+
+    Uses a .tmp file and replace() to prevent stale 
+    artifacts if the process is interrupted.
 
     Args:
-        path: output path or bare filename.
+        path: output path.
         trace: list of trace lines.
 
     Raises:
         OSError: if the file cannot be written.
     """
     target = Path(path)
-    if str(target.parent) == ".":
-        out_dir = Path("output")
-        out_dir.mkdir(exist_ok=True)
-        target = out_dir / path
-    target.write_text(
+    if not target.is_absolute():
+        target = Path.cwd() / target
+    
+    # Atomic write
+    temp_target = target.with_suffix(target.suffix + ".tmp")
+    temp_target.write_text(
         "\n".join(trace) + "\n", encoding="utf-8")
+    temp_target.replace(target)
     print(f"[INFO] File written to: {target.absolute()}")
 
 
@@ -525,6 +534,13 @@ def main(argv):
         else DEFAULT_INPUT
     output_path = argv[2] if len(argv) > 2 \
         else DEFAULT_OUTPUT
+
+    # Prevent stale artifacts: delete old result before starting
+    out_p = Path(output_path)
+    if not out_p.is_absolute():
+        out_p = Path.cwd() / out_p
+    if out_p.exists():
+        out_p.unlink()
 
     print("=== MiniLang Pipeline - Stage 2 (Python) ===")
     print(f"Reading: {input_path}")

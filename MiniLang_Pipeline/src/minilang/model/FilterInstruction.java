@@ -5,8 +5,12 @@ package minilang.model;
  * comparison against a threshold value.
  *
  * <p>
- * Supported operators: {@code >}, {@code <}, {@code =},
- * {@code >=}, {@code <=}, {@code !=}.</p>
+ * Supported operators: {@code >}, {@code <}, {@code >=},
+ * {@code <=}, {@code ==}.</p>
+ *
+ * <p>
+ * Contract: Only operators that the Lexer can produce are accepted. The '='
+ * operator is NOT supported (use '==' instead).</p>
  *
  * @author Randall AC
  * @author Keilor MC
@@ -43,6 +47,10 @@ public final class FilterInstruction extends Instruction {
     /**
      * Validates that the operator is allowed.
      *
+     * <p>
+     * Only accepts operators that the Lexer can produce:
+     * {@code >}, {@code <}, {@code >=}, {@code <=}, {@code ==}.</p>
+     *
      * @param op the operator to validate
      * @return the validated operator
      * @throws IllegalArgumentException if invalid
@@ -57,15 +65,12 @@ public final class FilterInstruction extends Instruction {
             case "<":
             case ">=":
             case "<=":
-            case "!=":
             case "==":
                 return op;
-            case "=":
-                return "==";
             default:
                 throw new IllegalArgumentException(
                         "Invalid FILTER operator: '" + op
-                        + "'. Allowed: > < = >= <= != ==");
+                        + "'. Allowed: > < >= <= ==");
         }
     }
 
