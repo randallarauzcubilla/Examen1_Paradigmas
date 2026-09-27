@@ -17,46 +17,49 @@ public enum TokenType {
      * {@code DATA} keyword: introduces a list of integers.
      */
     DATA,
+    
     /**
      * {@code FILTER} keyword: filters the current list.
      */
     FILTER,
+    
     /**
      * {@code MAP} keyword: transforms each element.
      */
     MAP,
+    
     /**
      * {@code REDUCE} keyword: aggregates the list to a scalar.
      */
     REDUCE,
+    
     /**
      * {@code PRINT} keyword: outputs the final result.
      */
     PRINT,
+    
     /**
-     * Integer literal (e.g. {@code 42}, {@code -7}).
+     * Integer literal (e.g. {@code 42}).
      */
     INTEGER,
+    
     /**
-     * Comparison operator. Allowed: {@code >}, {@code <}, {@code =},
-     * {@code >=}, {@code <=}, {@code !=}.
+     * Comparison operator. 
+     * Allowed: {@code >}, {@code <}, {@code >=}, {@code <=}, {@code ==}.
      */
     COMPARISON_OP,
+    
     /**
-     * Arithmetic operator. Allowed: {@code +}, {@code -}, {@code *}, {@code /}.
+     * Arithmetic operator. 
+     * Allowed: {@code +}, {@code -}, {@code *}, {@code /}.
      */
     ARITHMETIC_OP,
+    
     /**
-     * Reduce operator. Allowed: {@code SUM}, {@code AVG}, {@code MAX},
-     * {@code MIN}.
+     * Reduce operator. 
+     * Allowed: {@code SUM}, {@code AVG}, {@code MAX}, {@code MIN}.
      */
-    REDUCE_OP,
-    /**
-     * End-of-file sentinel.
-     */
-    EOF,
-    /**
-     * Unknown or unrecognized token.
-     */
-    UNKNOWN
+    REDUCE_OP
+    // Note: EOF and UNKNOWN were removed as the Lexer throws exceptions 
+    // or stops naturally, never emitting these synthetic tokens.
 }

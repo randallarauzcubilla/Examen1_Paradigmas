@@ -29,7 +29,8 @@ out_name:   .asciiz "output/firma.txt"
 buffer:     .space 2048
 numbuf:     .space 24
 pat_step:   .asciiz "STEP"
-pat_result: .asciiz "RESULT"
+# FIX 1: Strict pattern "RESULT:" (with colon) to avoid matching "RESULTADO"
+pat_result: .asciiz "RESULT:"
 lbl_res:    .asciiz "RESULT: "
 lbl_ops:    .asciiz "OPERATIONS: "
 lbl_byt:    .asciiz "BYTESUM: "
@@ -55,6 +56,26 @@ main:
         la   $a0, msg_start
         syscall
 
+        # FIX 3: Delete stale firma.txt before starting
+        # This prevents a valid signature from a previous run
+        # from surviving if this execution fails.
+        li   $v0, 13
+        la   $a0, out_name
+        li   $a1, 1              # write mode (to check existence)
+        li   $a2, 0
+        syscall
+        bgez $v0, close_stale    # if file exists, close and delete
+        j    open_input
+
+close_stale:
+        move $a0, $v0
+        li   $v0, 16             # close file
+        syscall
+        # Note: MARS doesn't have a direct "delete" syscall,
+        # but we'll overwrite it completely when we write.
+        # The key is we don't leave a valid signature if we fail.
+
+open_input:
         # ---------------- open resultado.txt (read)
         li   $v0, 13
         la   $a0, in_name
@@ -105,7 +126,8 @@ try_result:
         la   $a1, pat_result
         jal  match_word
         beqz $v0, advance
-        addi $a0, $t0, 6         # skip "RESULT"
+        # FIX 2: Offset corrected to 8 (R-E-S-U-L-T-:-space)
+        addi $a0, $t0, 8
         jal  parse_int
         move $s4, $v0            # final result
         move $t0, $v1

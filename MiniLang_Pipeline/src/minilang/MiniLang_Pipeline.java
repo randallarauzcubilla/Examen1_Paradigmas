@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import minilang.exception.LexerException;
@@ -40,14 +41,12 @@ public final class MiniLang_Pipeline {
     /**
      * Default input file name.
      */
-    private static final String INPUT_FILE
-            = "programa.mini";
+    private static final String INPUT_FILE = "programa.mini";
 
     /**
-     * Default output IR file name.
+     * Default output IR file name (deterministic path to output folder).
      */
-    private static final String OUTPUT_FILE
-            = "programa.ir";
+    private static final String OUTPUT_FILE = "output/programa.ir";
 
     /**
      * Private constructor to prevent instantiation. This class serves only as
@@ -138,78 +137,33 @@ public final class MiniLang_Pipeline {
      * @return the list of lines
      * @throws IOException if the file cannot be found anywhere
      */
-    private static List<String> readFile(
-            final String path) throws IOException {
-
-        // Try the exact path first
-        Path filePath = Paths.get(path);
-        if (Files.exists(filePath)) {
-            return Files.readAllLines(
-                    filePath, StandardCharsets.UTF_8);
+    private static List<String> readFile(final String path) throws IOException {
+        Path filePath = Paths.get(path).toAbsolutePath().normalize();
+        if (!Files.exists(filePath)) {
+            throw new IOException("Input file not found: " + filePath);
         }
-
-        // Fallback: search in common project directories
-        final String[] searchDirs = {
-            "test_cases",
-            "output",
-            "src",
-            "."
-        };
-
-        final String fileName
-                = Paths.get(path).getFileName().toString();
-
-        for (String dir : searchDirs) {
-            final Path candidate
-                    = Paths.get(dir, fileName);
-            if (Files.exists(candidate)) {
-                System.out.println(
-                        "[INFO] Found file at: "
-                        + candidate);
-                return Files.readAllLines(
-                        candidate,
-                        StandardCharsets.UTF_8);
-            }
-        }
-
-        throw new IOException(
-                "File not found in any known location: "
-                + path);
+        return Files.readAllLines(filePath, StandardCharsets.UTF_8);
     }
 
-     /**
+    /**
      * Writes content to the specified file.
      *
-     * <p>If the path is a simple filename (no directory),
-     * the file is written to the "output" directory.
-     * This ensures all generated artifacts are centralized.</p>
+     * <p>
+     * If the path is a simple filename (no directory), the file is written to
+     * the "output" directory. This ensures all generated artifacts are
+     * centralized.</p>
      *
-     * @param path    the output file path
+     * @param path the output file path
      * @param content the content to write
      * @throws IOException if the file cannot be written
      */
-    private static void writeFile(
-            final String path,
-            final String content) throws IOException {
+    private static void writeFile(final String path, final String content) throws IOException {
+        // ESCRITURA ATÓMICA: evita dejar un .ir corrupto o viejo si falla a mitad
+        Path targetPath = Paths.get(path).toAbsolutePath().normalize();
+        Path tempPath = targetPath.resolveSibling(targetPath.getFileName() + ".tmp");
 
-        Path filePath = Paths.get(path);
-
-        // If no directory specified, use output/
-        if (filePath.getParent() == null) {
-            final Path outputDir = Paths.get("output");
-            if (!Files.exists(outputDir)) {
-                Files.createDirectories(outputDir);
-            }
-            filePath = outputDir.resolve(path);
-        }
-
-        Files.write(
-                filePath,
-                content.getBytes(StandardCharsets.UTF_8));
-
-        System.out.println(
-                "[INFO] File written to: "
-                + filePath.toAbsolutePath());
+        Files.write(tempPath, content.getBytes(StandardCharsets.UTF_8));
+        Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
